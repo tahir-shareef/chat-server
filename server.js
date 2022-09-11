@@ -1,11 +1,13 @@
 const express = require("express");
 const connectDB = require("./config/db");
+var cors = require("cors");
 const app = express();
 const port = 6500;
 
 // middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cors());
 
 // Api Requests
 app.get("/", (req, res) => {

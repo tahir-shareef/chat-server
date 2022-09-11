@@ -2,17 +2,17 @@ const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const checkifUser = async (email, extended) => {
-  const userExists = await User.findOne({ email });
+const checkifUser = async (userName, extended) => {
+  const userExists = await User.findOne({ userName });
   if (extended) return userExists;
   return userExists !== null;
 };
 
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, userName, password } = req.body;
   //   trying to register a user
-  if (name && email && password) {
-    const userExists = await checkifUser(email);
+  if (name && userName && password) {
+    const userExists = await checkifUser(userName);
     if (userExists) {
       res.status(400).json({ error: "user already exists" });
     } else {
@@ -22,7 +22,7 @@ const registerUser = async (req, res) => {
         // Finally create a user
         await User.create({
           name,
-          email,
+          userName,
           password: hashedPassword,
         }).then((user) => {
           // sending response after registered
@@ -40,10 +40,10 @@ const registerUser = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
-  const { name, email, password } = req.body;
-  if (name && email) {
+  const { userName, password } = req.body;
+  if (userName && password) {
     // finding user
-    const user = await checkifUser(email, true);
+    const user = await checkifUser(userName, true);
 
     if (user) {
       // checking password
@@ -58,7 +58,9 @@ const loginUser = async (req, res) => {
           token: generateToken(user._id),
         });
       } else {
-        res.status(400).json({ error: "incorrect password !" });
+        res
+          .status(400)
+          .json({ error: "sorry you've entered incorrect password !" });
       }
     } else {
       res.status(400).json({ error: "user doesn't exists" });
@@ -69,8 +71,8 @@ const loginUser = async (req, res) => {
 };
 
 const canRegister = async (req, res) => {
-  const { email } = req.body;
-  const userExists = await checkifUser(email);
+  const { userName } = req.params;
+  const userExists = await checkifUser(userName);
   res.json({ canRegister: !userExists });
 };
 

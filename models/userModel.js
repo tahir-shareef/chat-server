@@ -6,15 +6,15 @@ const userSchema = mongoose.Schema(
       type: String,
       required: [true, "Please add a name"],
     },
-    email: {
+    userName: {
       type: String,
-      required: [true, "Please add an email"],
+      required: [true, "Please add a username"],
       unique: true,
       validate: {
-        validator: function (v) {
-          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+        validator: function (userName) {
+          return userName.includes(".") || userName.includes("_");
         },
-        message: "Please enter a valid email",
+        message: "Please enter a valid username",
       },
     },
     password: {
