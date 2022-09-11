@@ -1,21 +1,35 @@
 const User = require("../models/userModel");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
+const checkifUser = async (email, extended) => {
+  const userExists = await User.findOne({ email });
+  if (extended) return userExists;
+  return userExists !== null;
+};
 
 const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
   //   trying to register a user
   if (name && email && password) {
-    const userExists = await User.findOne({ email });
+    const userExists = await checkifUser(email);
     if (userExists) {
       res.status(400).json({ error: "user already exists" });
     } else {
-      // Finally create a user
       try {
+        // hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        // Finally create a user
         await User.create({
           name,
           email,
-          password,
+          password: hashedPassword,
+        }).then((user) => {
+          // sending response after registered
+          const userTOsend = JSON.parse(JSON.stringify(user));
+          delete userTOsend.password;
+          res.json({ user: userTOsend, token: generateToken(user._id) });
         });
-        res.json(name + " registered !");
       } catch (error) {
         res.status(400).json({ error: error.message });
       }
@@ -25,22 +39,45 @@ const registerUser = async (req, res) => {
   }
 };
 
-const loginUser = (req, res) => {
-  const { name, email } = req.body;
+const loginUser = async (req, res) => {
+  const { name, email, password } = req.body;
   if (name && email) {
-    res.json(name + " doing register !!!");
+    // finding user
+    const user = await checkifUser(email, true);
+
+    if (user) {
+      // checking password
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      // removing password field
+      const userTOsend = JSON.parse(JSON.stringify(user));
+      delete userTOsend.password;
+      if (passwordMatch) {
+        // here user can login
+        res.json({
+          user: userTOsend,
+          token: generateToken(user._id),
+        });
+      } else {
+        res.status(400).json({ error: "incorrect password !" });
+      }
+    } else {
+      res.status(400).json({ error: "user doesn't exists" });
+    }
   } else {
     res.status(401).json({ error: "incomplete fields " });
   }
 };
 
-const checkfUserExist = (req, res) => {
+const canRegister = async (req, res) => {
   const { email } = req.body;
-  if (true) {
-    res.json({ userExist: true });
-  } else {
-    res.status(400).json({ userExist: false });
-  }
+  const userExists = await checkifUser(email);
+  res.json({ canRegister: !userExists });
 };
 
-module.exports = { registerUser, loginUser, checkfUserExist };
+const generateToken = (id) => {
+  const jwt_secrete = "secrete123";
+  const token = jwt.sign({ id }, jwt_secrete, { expiresIn: "30d" });
+  return token;
+};
+
+module.exports = { registerUser, loginUser, canRegister };

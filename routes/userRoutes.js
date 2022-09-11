@@ -3,13 +3,13 @@ const router = express.Router();
 const {
   loginUser,
   registerUser,
-  checkfUserExist,
+  canRegister,
 } = require("../controllers/userControler");
 
 router.post("/login", loginUser);
 
 router.post("/register", registerUser);
 
-router.get("/checkifuser", checkfUserExist);
+router.get("/canregister", canRegister);
 
 module.exports = router;
