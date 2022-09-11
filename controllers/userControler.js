@@ -2,8 +2,8 @@ const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const checkifUser = async (userName, extended) => {
-  const userExists = await User.findOne({ userName });
+const checkifUser = async (query, extended) => {
+  const userExists = await User.findOne(query);
   if (extended) return userExists;
   return userExists !== null;
 };
@@ -12,7 +12,7 @@ const registerUser = async (req, res) => {
   const { name, userName, password } = req.body;
   //   trying to register a user
   if (name && userName && password) {
-    const userExists = await checkifUser(userName);
+    const userExists = await checkifUser({ userName });
     if (userExists) {
       res.status(400).json({ error: "user already exists" });
     } else {
@@ -24,6 +24,8 @@ const registerUser = async (req, res) => {
           name,
           userName,
           password: hashedPassword,
+          profileImage:
+            "https://i.pinimg.com/originals/28/a4/70/28a470426182529c6a58593f69eb1117.jpg",
         }).then((user) => {
           // sending response after registered
           const userTOsend = JSON.parse(JSON.stringify(user));
@@ -43,7 +45,7 @@ const loginUser = async (req, res) => {
   const { userName, password } = req.body;
   if (userName && password) {
     // finding user
-    const user = await checkifUser(userName, true);
+    const user = await checkifUser({ userName }, true);
 
     if (user) {
       // checking password
@@ -72,8 +74,24 @@ const loginUser = async (req, res) => {
 
 const canRegister = async (req, res) => {
   const { userName } = req.params;
-  const userExists = await checkifUser(userName);
+  const userExists = await checkifUser({ userName });
   res.json({ canRegister: !userExists });
+};
+
+const getMe = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await checkifUser({ _id: userId }, true);
+    if (user) {
+      const userTOsend = JSON.parse(JSON.stringify(user));
+      delete userTOsend.password;
+      res.json({ user: userTOsend });
+    } else {
+      res.status(400).json({ error: "user doesn't exists" });
+    }
+  } catch (e) {
+    res.status(400).json({ error: "invalid user request !" });
+  }
 };
 
 const generateToken = (id) => {
@@ -82,4 +100,4 @@ const generateToken = (id) => {
   return token;
 };
 
-module.exports = { registerUser, loginUser, canRegister };
+module.exports = { registerUser, loginUser, canRegister, getMe };
