@@ -14,6 +14,7 @@ app.use(cors());
 app.get("/", (req, res) => {
   res.send("Hello Tahir !");
 });
+
 app.use(
   "/api/user",
   (req, res, next) => {
@@ -21,6 +22,15 @@ app.use(
     next();
   },
   require("./routes/userRoutes")
+);
+
+app.use(
+  "/api/chats",
+  (req, res, next) => {
+    console.log(req.url, req.body);
+    next();
+  },
+  require("./routes/chatRoutes")
 );
 
 //--Connecting Database and Listening Server

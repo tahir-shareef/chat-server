@@ -26,11 +26,13 @@ const registerUser = async (req, res) => {
           password: hashedPassword,
           profileImage:
             "https://i.pinimg.com/originals/28/a4/70/28a470426182529c6a58593f69eb1117.jpg",
-        }).then((user) => {
+        }).then(async (user) => {
           // sending response after registered
           const userTOsend = JSON.parse(JSON.stringify(user));
           delete userTOsend.password;
-          res.json({ user: userTOsend, token: generateToken(user._id) });
+          const chats = await getChats();
+
+          res.json({ user: userTOsend, token: generateToken(user._id), chats });
         });
       } catch (error) {
         res.status(400).json({ error: error.message });
@@ -55,9 +57,12 @@ const loginUser = async (req, res) => {
       delete userTOsend.password;
       if (passwordMatch) {
         // here user can login
+        const chats = await getChats();
+
         res.json({
           user: userTOsend,
           token: generateToken(user._id),
+          chats,
         });
       } else {
         res
@@ -85,7 +90,13 @@ const getMe = async (req, res) => {
     if (user) {
       const userTOsend = JSON.parse(JSON.stringify(user));
       delete userTOsend.password;
-      res.json({ user: userTOsend });
+      const chats = await getChats();
+
+      res.json({
+        user: userTOsend,
+        token: generateToken(userTOsend._id),
+        chats,
+      });
     } else {
       res.status(400).json({ error: "user doesn't exists" });
     }
@@ -94,9 +105,14 @@ const getMe = async (req, res) => {
   }
 };
 
+// helpers
+const getChats = async () => {
+  const chats = await User.find().select("-password");
+  return chats;
+};
 const generateToken = (id) => {
   const jwt_secrete = "secrete123";
-  const token = jwt.sign({ id }, jwt_secrete, { expiresIn: "30d" });
+  const token = jwt.sign({ id }, jwt_secrete, { expiresIn: "1d" });
   return token;
 };
 

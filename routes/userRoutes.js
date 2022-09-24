@@ -6,6 +6,7 @@ const {
   canRegister,
   getMe,
 } = require("../controllers/userControler");
+const dummyprotect = require("../middlewares/authentication");
 
 router.post("/login", loginUser);
 
@@ -13,6 +14,7 @@ router.post("/register", registerUser);
 
 router.get("/canregister/:userName", canRegister);
 
-router.get("/getme/:userId", getMe);
+router.get("/getme/:userId", dummyprotect, getMe);
+
 
 module.exports = router;
