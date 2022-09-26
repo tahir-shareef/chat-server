@@ -30,56 +30,55 @@ const sendMessage = async (req, res) => {
     if (message) {
       const messageObj = {
         message,
-        senderId,
-        recieverId,
+        sender: senderId,
+        reciever: recieverId,
         time: Date.now(),
       };
 
-      conversationModel.updateOne(
-        { _id: conversationId },
-        { $push: { messages: messageObj } },
-        {
-          new: true,
-          upsert: true,
-        },
-        (err, docs) => {
-          if (err) {
-            console.log(err);
-            res.status(400).json({ error: "can't send message !" });
-          }
-        }
-      );
-
-      // const user = await userModel.findById(senderId);
-      const user = await userModel.updateOne(
-        { _id: "633135bafdddd54c3e9c7dc9", "chats.id": conversationId },
-        { $set: { "chats.$.name": "Tahir Shareef 2" } },
-        { upsert: true }
-      );
-
-      return;
-      console.log(res, "Response");
-      return;
-      await userModel.updateOne(
-        { _id: user._id },
-        {
-          $set: {
-            chats: { newMessage: "My Message" },
+      // first we find a user
+      const recieverUser = await userModel.findById(recieverId);
+      if (recieverUser) {
+        conversationModel.updateOne(
+          { _id: conversationId },
+          { $push: { messages: messageObj } },
+          {
+            new: true,
+            upsert: true,
           },
-        },
-        {
-          new: true,
-          upsert: true,
-        },
-        (err, docs) => {
-          if (err) {
-            console.log(err);
-            res.status(400).json({ error: "can't send chat !" });
+          (err, docs) => {
+            if (err) {
+              console.log(err);
+              res.status(400).json({ error: "can't send message !" });
+            }
           }
-        }
-      );
+        );
 
-      res.json(messageObj);
+        // Upadting Main view Chats
+        const objToset = {
+          user: recieverId,
+        };
+
+        const chatObj = await userModel.findOneAndUpdate(
+          { _id: senderId, "chats.user": recieverId },
+          { $set: { "chats.$": objToset } }
+        );
+
+        console.log(chatObj);
+
+        // if not in a chat array then push new one
+        if (!chatObj) {
+          await userModel.updateOne(
+            { _id: senderId },
+            { $push: { chats: objToset } }
+          );
+        }
+
+        res.json(messageObj);
+      } else {
+        res.status(400).json({
+          error: "The user you're trying to reach , doesn't exists !",
+        });
+      }
     } else {
       res.status(400).json({ error: "message must be provided !" });
     }
@@ -89,4 +88,23 @@ const sendMessage = async (req, res) => {
   }
 };
 
-module.exports = { getChats, getchatuser, sendMessage };
+const getConversation = async (req, res) => {
+  const senderId = req.user._id.toString();
+  const { recieverId } = req.params;
+
+  const conversationId = [recieverId, senderId].sort()[0];
+  try {
+    const conversation = await conversationModel.findById({
+      _id: conversationId,
+    });
+    res.json({
+      conversation,
+    });
+  } catch (e) {
+    res.status(400).json({
+      error: "cannot get conversation !",
+      serverError: e,
+    });
+  }
+};
+module.exports = { getChats, getchatuser, sendMessage, getConversation };

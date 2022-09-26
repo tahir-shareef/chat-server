@@ -17,11 +17,12 @@ const protect = async (req, res, next) => {
 
       // Get user from the token
       const user = await userModel.findById(decoded.id).select("-password");
-      if (typeof user === "object") {
+      console.log(user);
+      if (user) {
         req.user = user;
         next();
       } else {
-        res.status(401).json({ error: "Token user not exists !" });
+        res.status(401).json({ error: "you are not exists !" });
       }
     } catch (error) {
       console.log(error);

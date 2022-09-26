@@ -14,7 +14,7 @@ router.post("/register", registerUser);
 
 router.get("/canregister/:userName", canRegister);
 
-router.get("/getme/:userId", dummyprotect, getMe);
+router.get("/getme/", dummyprotect, getMe);
 
 
 module.exports = router;

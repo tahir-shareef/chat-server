@@ -3,10 +3,13 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const checkifUser = async (query, extended) => {
-  const userExists = await User.findOne(query).populate({
-    path: "chats",
-    model: "User",
-  });
+  const userExists = await User.findOne(query)
+    .populate({
+      path: "chats.user",
+      model: "User",
+      select: "-chats",
+    })
+    .select("-user.chats");
   if (extended) return userExists;
   return userExists !== null;
 };
@@ -87,9 +90,10 @@ const canRegister = async (req, res) => {
 };
 
 const getMe = async (req, res) => {
-  const { userId } = req.params;
   try {
-    const user = await checkifUser({ _id: userId }, true);
+    const user = await checkifUser({ _id: req.user._id.toString() }, true);
+    // const user = await User.findById(userId);
+    console.log(user);
     if (user) {
       const userTOsend = JSON.parse(JSON.stringify(user));
       delete userTOsend.password;
@@ -97,12 +101,12 @@ const getMe = async (req, res) => {
 
       res.json({
         user: userTOsend,
-        token: generateToken(userTOsend._id),
       });
     } else {
       res.status(400).json({ error: "user doesn't exists" });
     }
   } catch (e) {
+    // console.log(e);
     res.status(400).json({ error: "invalid user request !" });
   }
 };
