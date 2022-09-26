@@ -22,6 +22,10 @@ const userSchema = mongoose.Schema(
       required: [true, "Please add a password"],
       minLength: [6, "password must be equal or greator than 6 characters"],
     },
+    chats: {
+      type: Array,
+      default: [],
+    },
     profileImage: String,
   },
   {

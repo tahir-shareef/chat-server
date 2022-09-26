@@ -3,7 +3,10 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const checkifUser = async (query, extended) => {
-  const userExists = await User.findOne(query);
+  const userExists = await User.findOne(query).populate({
+    path: "chats",
+    model: "User",
+  });
   if (extended) return userExists;
   return userExists !== null;
 };
@@ -32,7 +35,7 @@ const registerUser = async (req, res) => {
           delete userTOsend.password;
           const chats = await getChats();
 
-          res.json({ user: userTOsend, token: generateToken(user._id), chats });
+          res.json({ user: userTOsend, token: generateToken(user._id) });
         });
       } catch (error) {
         res.status(400).json({ error: error.message });
@@ -62,7 +65,7 @@ const loginUser = async (req, res) => {
         res.json({
           user: userTOsend,
           token: generateToken(user._id),
-          chats,
+          // chats,
         });
       } else {
         res
@@ -95,7 +98,6 @@ const getMe = async (req, res) => {
       res.json({
         user: userTOsend,
         token: generateToken(userTOsend._id),
-        chats,
       });
     } else {
       res.status(400).json({ error: "user doesn't exists" });
@@ -111,8 +113,7 @@ const getChats = async () => {
   return chats;
 };
 const generateToken = (id) => {
-  const jwt_secrete = "secrete123";
-  const token = jwt.sign({ id }, jwt_secrete, { expiresIn: "1d" });
+  const token = jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
   return token;
 };
 
