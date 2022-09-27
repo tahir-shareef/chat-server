@@ -17,7 +17,7 @@ const messageSchema = mongoose.Schema(
 const conversationSchema = mongoose.Schema(
   {
     messages: [messageSchema],
-    _id: mongoose.Types.ObjectId,
+    conversationId: String,
   },
   {
     timestamps: true,

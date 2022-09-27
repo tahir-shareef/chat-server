@@ -24,7 +24,7 @@ const sendMessage = async (req, res) => {
   const { recieverId } = req.params;
   const { message } = req.body;
 
-  const conversationId = [recieverId, senderId].sort()[0];
+  const conversationId = getConversationId(senderId, recieverId);
 
   try {
     if (message) {
@@ -39,7 +39,7 @@ const sendMessage = async (req, res) => {
       const recieverUser = await userModel.findById(recieverId);
       if (recieverUser) {
         conversationModel.updateOne(
-          { _id: conversationId },
+          { conversationId },
           { $push: { messages: messageObj } },
           {
             new: true,
@@ -58,18 +58,34 @@ const sendMessage = async (req, res) => {
           user: recieverId,
         };
 
+        // for sender
         const chatObj = await userModel.findOneAndUpdate(
           { _id: senderId, "chats.user": recieverId },
           { $set: { "chats.$": objToset } }
         );
-
-        console.log(chatObj);
 
         // if not in a chat array then push new one
         if (!chatObj) {
           await userModel.updateOne(
             { _id: senderId },
             { $push: { chats: objToset } }
+          );
+        }
+
+        // For receiver
+        const recieverChat = {
+          user: senderId,
+        };
+        const recieverChatObj = await userModel.findOneAndUpdate(
+          { _id: recieverId, "chats.user": senderId },
+          { $set: { "chats.$": recieverChat } }
+        );
+
+        // if not in a chat array then push new one
+        if (!recieverChatObj) {
+          await userModel.updateOne(
+            { _id: recieverId },
+            { $push: { chats: recieverChat } }
           );
         }
 
@@ -91,11 +107,11 @@ const sendMessage = async (req, res) => {
 const getConversation = async (req, res) => {
   const senderId = req.user._id.toString();
   const { recieverId } = req.params;
+  const conversationId = getConversationId(senderId, recieverId);
 
-  const conversationId = [recieverId, senderId].sort()[0];
   try {
-    const conversation = await conversationModel.findById({
-      _id: conversationId,
+    const conversation = await conversationModel.findOne({
+      conversationId,
     });
     res.json({
       conversation,
@@ -106,5 +122,11 @@ const getConversation = async (req, res) => {
       serverError: e,
     });
   }
+};
+
+// helper functions
+const getConversationId = (firstId, secondId) => {
+  const conversationId = [firstId, secondId].sort().join("");
+  return conversationId;
 };
 module.exports = { getChats, getchatuser, sendMessage, getConversation };
