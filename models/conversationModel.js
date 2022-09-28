@@ -8,6 +8,7 @@ const messageSchema = mongoose.Schema(
     },
     sender: mongoose.Types.ObjectId,
     reciever: mongoose.Types.ObjectId,
+    lastMessage: Object,
   },
   {
     timestamps: true,

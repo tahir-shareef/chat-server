@@ -32,12 +32,12 @@ const sendMessage = async (req, res) => {
         message,
         sender: senderId,
         reciever: recieverId,
-        time: Date.now(),
       };
 
       // first we find a user
       const recieverUser = await userModel.findById(recieverId);
       if (recieverUser) {
+        // updating message
         conversationModel.updateOne(
           { conversationId },
           { $push: { messages: messageObj } },
@@ -54,40 +54,28 @@ const sendMessage = async (req, res) => {
         );
 
         // Upadting Main view Chats
-        const objToset = {
-          user: recieverId,
+        const upateChatsDataOfUser = async (senderId, recieverId) => {
+          const objToset = {
+            user: recieverId,
+            lastMessage: { ...messageObj, createdAt: Date.now() },
+          };
+          const chatObj = await userModel.findOneAndUpdate(
+            { _id: senderId, "chats.user": recieverId },
+            { $set: { "chats.$": objToset } }
+          );
+          // if not in a chat array then push new one
+          if (!chatObj) {
+            await userModel.updateOne(
+              { _id: senderId },
+              { $push: { chats: objToset } }
+            );
+          }
         };
 
         // for sender
-        const chatObj = await userModel.findOneAndUpdate(
-          { _id: senderId, "chats.user": recieverId },
-          { $set: { "chats.$": objToset } }
-        );
-
-        // if not in a chat array then push new one
-        if (!chatObj) {
-          await userModel.updateOne(
-            { _id: senderId },
-            { $push: { chats: objToset } }
-          );
-        }
-
-        // For receiver
-        const recieverChat = {
-          user: senderId,
-        };
-        const recieverChatObj = await userModel.findOneAndUpdate(
-          { _id: recieverId, "chats.user": senderId },
-          { $set: { "chats.$": recieverChat } }
-        );
-
-        // if not in a chat array then push new one
-        if (!recieverChatObj) {
-          await userModel.updateOne(
-            { _id: recieverId },
-            { $push: { chats: recieverChat } }
-          );
-        }
+        await upateChatsDataOfUser(senderId, recieverId);
+        // for reciever
+        await upateChatsDataOfUser(recieverId, senderId);
 
         res.json(messageObj);
       } else {
